@@ -1,0 +1,36 @@
+name: Build BassRig
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencias do Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev libfreetype-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libgl1-mesa-dev libcurl4-openssl-dev
+
+      - name: Configurar
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBASSRIG_COPY_AFTER_BUILD=OFF
+
+      - name: Compilar
+        run: cmake --build build --config Release --parallel
+
+      - name: Enviar VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: BassRig-VST3-${{ runner.os }}
+          path: build/BassRig_artefacts/Release/VST3
